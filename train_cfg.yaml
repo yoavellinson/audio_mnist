@@ -1,0 +1,97 @@
+defaults:
+  - hydra/job_logging: colorlog
+  - hydra/hydra_logging: colorlog
+
+# Dataset
+wav_paths: /root/audio_classification/audio_mnist/clean_wavs_1s
+# dt: 0.032
+n_classes: 10
+classes:
+  {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+  }
+# Checkpointing, by default automatically load last checkpoint
+checkpoint: True
+checkpoint_dir: /root/audio_classification/audio_mnist/checkpoints
+#model
+verbose: True
+sr: 16000
+# Optimization related
+optim: adam
+lr: 0.001
+epochs: 30
+batch_size: 32
+num_workers: 0
+
+# learning rate scheduling
+lr_sched: step # can be either step or plateau
+step:
+  step_size: 2
+  gamma: 0.98
+plateau:
+  factor: 0.5
+  patience: 5
+
+# Hydra config
+hydra:
+  run:
+    dir: /root/audio_classification/audio_mnist/hydra_outputs/${hydra.job.override_dirname}
+  job:
+    config:
+      # configuration for the ${hydra.job.override_dirname} runtime variable
+      override_dirname:
+        kv_sep: "="
+        item_sep: ","
+        # Remove all paths, as the / in them would mess up things
+        # Remove params that would not impact the training itself
+        # Remove all slurm and submit params.
+        # This is ugly I know...
+        exclude_keys:
+          [
+            "hydra.job_logging.handles.file.filename",
+            "dset.train",
+            "dset.valid",
+            "dset.test",
+            "dset.mix_json",
+            "dset.mix_dir",
+            "num_prints",
+            "continue_from",
+            "device",
+            "num_workers",
+            "print_freq",
+            "restart",
+            "verbose",
+            "log",
+            "ddp",
+            "ddp_backend",
+            "rendezvous_file",
+            "rank",
+            "world_size",
+          ]
+  job_logging:
+    handlers:
+      file:
+        class: logging.FileHandler
+        mode: w
+        formatter: colorlog
+        filename: trainer.log
+      console:
+        class: logging.StreamHandler
+        formatter: colorlog
+        stream: ext://sys.stderr
+
+  hydra_logging:
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: colorlog
+        stream: ext://sys.stderr
